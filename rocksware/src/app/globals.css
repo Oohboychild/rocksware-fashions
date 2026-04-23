@@ -1,26 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --black: #0A0A0A;
+  --cream: #F5F0E8;
+  --cognac: #C4956A;
+  --cognac-dark: #A67C52;
+  --cognac-light: #E8D5BC;
+  --white: #FFFFFF;
+  --gray-100: #F7F4F0;
+  --gray-200: #EDE8E0;
+  --gray-400: #B5AFA6;
+  --gray-600: #6E6860;
+  --gray-800: #2C2825;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--cream);
+  color: var(--black);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.font-display {
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.font-body {
+  font-family: 'Jost', sans-serif;
+}
+
+.btn-primary {
+  background-color: #0A0A0A;
+  color: #F5F0E8;
+  padding: 12px 32px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Jost', sans-serif;
+  font-weight: 400;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s ease;
+  display: inline-block;
+}
+
+.btn-primary:hover {
+  background-color: #C4956A;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #0A0A0A;
+  padding: 12px 32px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Jost', sans-serif;
+  border: 1px solid #0A0A0A;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.btn-outline:hover {
+  background-color: #0A0A0A;
+  color: #F5F0E8;
+}
+
+.btn-cognac {
+  background-color: #C4956A;
+  color: #FFFFFF;
+  padding: 12px 32px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: 'Jost', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: inline-block;
+}
+
+.btn-cognac:hover {
+  background-color: #A67C52;
+}
+
+.section-padding {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-left: 80px;
+    padding-right: 80px;
+  }
+}
+
+.container-narrow {
+  max-width: 1152px;
+  margin-left: auto;
+  margin-right: auto;
 }
