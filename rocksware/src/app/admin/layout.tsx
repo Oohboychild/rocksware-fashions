@@ -5,21 +5,11 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { onAuthChange } from "@/lib/auth";
-import {
-  LayoutDashboard,
-  Package,
-  ShoppingBag,
-  LogOut,
-  Plus,
-} from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, LogOut, Plus } from "lucide-react";
 import { logoutUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, setUser, setLoading } = useAuthStore();
@@ -49,51 +39,86 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#F7F4F0]">
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#F7F4F0" }}>
 
-      {/* ── Sidebar ──────────────────────────────────────────────────── */}
-      <aside className="w-64 bg-[#0A0A0A] flex flex-col fixed h-full z-40">
+      {/* Sidebar */}
+      <aside style={{
+        width: "256px",
+        minWidth: "256px",
+        backgroundColor: "#0A0A0A",
+        display: "flex",
+        flexDirection: "column",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "100vh",
+        zIndex: 40,
+        overflowY: "auto",
+      }}>
 
         {/* Logo */}
-        <div className="p-8 border-b border-[#2C2825]">
-          <Link
-            href="/"
-            className="font-display text-2xl tracking-[0.15em] text-[#F5F0E8] uppercase"
-          >
+        <div style={{ padding: "32px", borderBottom: "1px solid #2C2825" }}>
+          <Link href="/" style={{
+            fontFamily: "Georgia, serif",
+            fontSize: "24px",
+            letterSpacing: "0.15em",
+            color: "#F5F0E8",
+            textTransform: "uppercase",
+            textDecoration: "none",
+          }}>
             Rocksware
           </Link>
-          <p className="text-[#C4956A] text-[10px] tracking-widest uppercase font-body mt-1">
+          <p style={{
+            color: "#C4956A",
+            fontSize: "10px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            fontFamily: "Jost, sans-serif",
+            marginTop: "4px",
+          }}>
             Admin Panel
           </p>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-6 space-y-1">
+        <nav style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column", gap: "4px" }}>
           {navLinks.map((link) => {
             const Icon = link.icon;
             const active = pathname === link.href;
             return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 px-4 py-3 text-xs tracking-widest uppercase font-body transition-colors ${
-                  active
-                    ? "bg-[#C4956A] text-white"
-                    : "text-[#6E6860] hover:text-[#F5F0E8] hover:bg-[#2C2825]"
-                }`}
-              >
+              <Link key={link.href} href={link.href} style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "12px 16px",
+                fontSize: "11px",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                fontFamily: "Jost, sans-serif",
+                textDecoration: "none",
+                backgroundColor: active ? "#C4956A" : "transparent",
+                color: active ? "white" : "#6E6860",
+                transition: "all 0.2s",
+              }}>
                 <Icon size={15} />
                 {link.label}
               </Link>
             );
           })}
 
-          {/* Quick add */}
-          <div className="pt-4 mt-4 border-t border-[#2C2825]">
-            <Link
-              href="/admin/products/new"
-              className="flex items-center gap-3 px-4 py-3 text-xs tracking-widest uppercase font-body text-[#C4956A] hover:bg-[#2C2825] transition-colors"
-            >
+          <div style={{ paddingTop: "16px", marginTop: "16px", borderTop: "1px solid #2C2825" }}>
+            <Link href="/admin/products/new" style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "12px 16px",
+              fontSize: "11px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              fontFamily: "Jost, sans-serif",
+              textDecoration: "none",
+              color: "#C4956A",
+            }}>
               <Plus size={15} />
               Add Product
             </Link>
@@ -101,27 +126,58 @@ export default function AdminLayout({
         </nav>
 
         {/* User + Logout */}
-        <div className="p-6 border-t border-[#2C2825]">
-          <p className="text-[#6E6860] text-xs font-body mb-1 truncate">
+        <div style={{ padding: "24px", borderTop: "1px solid #2C2825" }}>
+          <p style={{
+            color: "#6E6860",
+            fontSize: "12px",
+            fontFamily: "Jost, sans-serif",
+            marginBottom: "4px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
             {user?.email}
           </p>
-          <p className="text-[#C4956A] text-[10px] tracking-widest uppercase font-body mb-4">
+          <p style={{
+            color: "#C4956A",
+            fontSize: "10px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            fontFamily: "Jost, sans-serif",
+            marginBottom: "16px",
+          }}>
             Administrator
           </p>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-xs tracking-widest uppercase font-body text-[#6E6860] hover:text-red-400 transition-colors"
-          >
+          <button onClick={handleLogout} style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "11px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            fontFamily: "Jost, sans-serif",
+            color: "#6E6860",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}>
             <LogOut size={14} />
             Sign Out
           </button>
         </div>
       </aside>
 
-      {/* ── Main content ─────────────────────────────────────────────── */}
-      <main className="ml-64 flex-1 min-h-screen">
+      {/* Main content */}
+      <main style={{
+        marginLeft: "256px",
+        flex: 1,
+        minHeight: "100vh",
+        width: "calc(100% - 256px)",
+        overflowX: "hidden",
+      }}>
         {children}
       </main>
+
     </div>
   );
 }
