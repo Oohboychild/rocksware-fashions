@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Shoe, ShoeCategory } from "@/types";
-import { SlidersHorizontal, X, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, ShoppingBag } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import toast from "react-hot-toast";
@@ -22,7 +22,7 @@ const categories: { label: string; value: ShoeCategory | "all" }[] = [
 ];
 
 const sortOptions = [
-  { label: "Newest", value: "newest" },
+  { label: "Newest First", value: "newest" },
   { label: "Price: Low to High", value: "price-asc" },
   { label: "Price: High to Low", value: "price-desc" },
 ];
@@ -41,10 +41,10 @@ export default function ShopPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [maxPrice, setMaxPrice] = useState(50000);
   const [sortOpen, setSortOpen] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const addItem = useCartStore((s) => s.addItem);
 
-  // Fetch shoes from Firestore
   useEffect(() => {
     const fetchShoes = async () => {
       try {
@@ -63,121 +63,242 @@ export default function ShopPage() {
     fetchShoes();
   }, []);
 
-  // Filter + sort
   useEffect(() => {
     let result = [...shoes];
-
     if (activeCategory !== "all") {
       result = result.filter((s) => s.category === activeCategory);
     }
-
     result = result.filter((s) => s.price <= maxPrice);
-
     if (sortBy === "price-asc") result.sort((a, b) => a.price - b.price);
     if (sortBy === "price-desc") result.sort((a, b) => b.price - a.price);
-
     setFiltered(result);
   }, [shoes, activeCategory, sortBy, maxPrice]);
 
   const handleQuickAdd = (shoe: Shoe) => {
-    if (shoe.sizes.length === 0) return;
-    addItem(shoe, shoe.sizes[0], shoe.colors[0] || "Default");
+    if (!shoe.sizes?.length) return;
+    addItem(shoe, shoe.sizes[0], shoe.colors?.[0] || "Default");
     toast.success(`${shoe.name} added to cart`);
   };
 
   return (
-    <div className="min-h-screen">
+    <div style={{ minHeight: "100vh", backgroundColor: "#F5F0E8" }}>
 
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="bg-[#0A0A0A] section-padding py-16">
-        <div className="container-narrow">
-          <p className="text-[#C4956A] text-xs tracking-[0.3em] uppercase font-body mb-3">
-            {activeCategory === "all" ? "Everything" : activeCategory}
-          </p>
-          <h1 className="font-display text-5xl md:text-6xl text-[#F5F0E8]">
-            {activeCategory === "all" ? "All Shoes" : activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}
-          </h1>
-          <p className="text-[#6E6860] font-body text-sm mt-3">
-            {filtered.length} {filtered.length === 1 ? "style" : "styles"} available
-          </p>
+      <div style={{ backgroundColor: "#0A0A0A", padding: "80px 0 60px" }}>
+        <div className="section-padding">
+          <div className="container-narrow">
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div style={{ width: "24px", height: "1px", backgroundColor: "#C4956A" }} />
+              <p style={{
+                color: "#C4956A",
+                fontSize: "10px",
+                letterSpacing: "0.35em",
+                textTransform: "uppercase",
+                fontFamily: "Jost, sans-serif",
+              }}>
+                {activeCategory === "all" ? "Everything" : activeCategory}
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
+              <h1 style={{
+                fontFamily: "Georgia, serif",
+                fontSize: "clamp(48px, 8vw, 80px)",
+                color: "#F5F0E8",
+                lineHeight: 0.95,
+                fontWeight: 400,
+              }}>
+                {activeCategory === "all"
+                  ? "All Shoes"
+                  : activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}
+              </h1>
+              <p style={{
+                color: "#3A3A3C",
+                fontFamily: "Jost, sans-serif",
+                fontSize: "13px",
+                letterSpacing: "0.05em",
+                paddingBottom: "8px",
+              }}>
+                {filtered.length} {filtered.length === 1 ? "style" : "styles"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="section-padding py-10">
-        <div className="container-narrow">
+      {/* ── Toolbar ─────────────────────────────────────────────────── */}
+      <div style={{
+        borderBottom: "1px solid #EDE8E0",
+        backgroundColor: "#F5F0E8",
+        position: "sticky",
+        top: "72px",
+        zIndex: 30,
+      }}>
+        <div className="section-padding">
+          <div className="container-narrow">
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              height: "56px",
+              gap: "16px",
+            }}>
 
-          {/* ── Toolbar ─────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
+              {/* Category pills — scrollable on mobile */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                overflowX: "auto",
+                flex: 1,
+                paddingBottom: "2px",
+                msOverflowStyle: "none",
+                scrollbarWidth: "none",
+              }}>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setActiveCategory(cat.value)}
+                    style={{
+                      padding: "6px 16px",
+                      fontSize: "11px",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      fontFamily: "Jost, sans-serif",
+                      fontWeight: 400,
+                      whiteSpace: "nowrap",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      backgroundColor: activeCategory === cat.value ? "#0A0A0A" : "transparent",
+                      color: activeCategory === cat.value ? "#F5F0E8" : "#6E6860",
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* Category pills */}
-            <div className="flex gap-2 flex-wrap">
-              {categories.map((cat) => (
+              {/* Right controls */}
+              <div style={{ display: "flex", alignItems: "center", gap: "20px", flexShrink: 0 }}>
+
+                {/* Filter */}
                 <button
-                  key={cat.value}
-                  onClick={() => setActiveCategory(cat.value)}
-                  className={`px-4 py-2 text-xs tracking-widest uppercase font-body border transition-colors duration-200 ${
-                    activeCategory === cat.value
-                      ? "bg-[#0A0A0A] text-[#F5F0E8] border-[#0A0A0A]"
-                      : "bg-transparent text-[#6E6860] border-[#EDE8E0] hover:border-[#0A0A0A] hover:text-[#0A0A0A]"
-                  }`}
+                  onClick={() => setFiltersOpen(!filtersOpen)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "11px",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    fontFamily: "Jost, sans-serif",
+                    color: filtersOpen ? "#C4956A" : "#6E6860",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
                 >
-                  {cat.label}
+                  <SlidersHorizontal size={13} />
+                  Filter
                 </button>
-              ))}
-            </div>
 
-            {/* Right controls */}
-            <div className="flex items-center gap-4">
-              {/* Filter button */}
-              <button
-                onClick={() => setFiltersOpen(!filtersOpen)}
-                className="flex items-center gap-2 text-xs tracking-widest uppercase font-body text-[#6E6860] hover:text-[#0A0A0A] transition-colors"
-              >
-                <SlidersHorizontal size={14} />
-                Filter
-              </button>
+                {/* Divider */}
+                <div style={{ width: "1px", height: "14px", backgroundColor: "#EDE8E0" }} />
 
-              {/* Sort dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setSortOpen(!sortOpen)}
-                  className="flex items-center gap-2 text-xs tracking-widest uppercase font-body text-[#6E6860] hover:text-[#0A0A0A] transition-colors"
-                >
-                  Sort
-                  <ChevronDown size={14} />
-                </button>
-                {sortOpen && (
-                  <div className="absolute right-0 top-8 bg-white border border-[#EDE8E0] shadow-lg z-20 min-w-[180px]">
-                    {sortOptions.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
-                        className={`block w-full text-left px-4 py-3 text-xs tracking-wide font-body hover:bg-[#F7F4F0] transition-colors ${
-                          sortBy === opt.value ? "text-[#C4956A]" : "text-[#2C2825]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Sort */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setSortOpen(!sortOpen)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontSize: "11px",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      fontFamily: "Jost, sans-serif",
+                      color: "#6E6860",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
+                  >
+                    Sort
+                    <ChevronDown size={13} style={{ transform: sortOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
+                  </button>
+
+                  {sortOpen && (
+                    <div style={{
+                      position: "absolute",
+                      right: 0,
+                      top: "32px",
+                      backgroundColor: "#0A0A0A",
+                      minWidth: "200px",
+                      zIndex: 50,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+                    }}>
+                      {sortOptions.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "14px 20px",
+                            fontSize: "11px",
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                            fontFamily: "Jost, sans-serif",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            color: sortBy === opt.value ? "#C4956A" : "#6E6860",
+                            borderBottom: "1px solid #1C1C1E",
+                            transition: "color 0.2s",
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* ── Filter Panel ────────────────────────────────────────── */}
-          {filtersOpen && (
-            <div className="bg-[#F7F4F0] border border-[#EDE8E0] p-6 mb-8 relative">
-              <button
-                onClick={() => setFiltersOpen(false)}
-                className="absolute top-4 right-4 text-[#6E6860] hover:text-[#0A0A0A]"
-              >
-                <X size={16} />
-              </button>
-              <div className="max-w-sm">
-                <p className="text-xs tracking-widest uppercase font-body text-[#6E6860] mb-4">
-                  Max Price: KES {maxPrice.toLocaleString()}
+      {/* ── Filter Panel ────────────────────────────────────────────── */}
+      {filtersOpen && (
+        <div style={{
+          backgroundColor: "#0A0A0A",
+          padding: "32px 0",
+          borderBottom: "1px solid #1C1C1E",
+        }}>
+          <div className="section-padding">
+            <div className="container-narrow">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+                <p style={{
+                  fontSize: "10px",
+                  letterSpacing: "0.25em",
+                  textTransform: "uppercase",
+                  fontFamily: "Jost, sans-serif",
+                  color: "#C4956A",
+                }}>
+                  Max Price — KES {maxPrice.toLocaleString()}
                 </p>
+                <button
+                  onClick={() => setFiltersOpen(false)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#6E6860", padding: 0 }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div style={{ maxWidth: "400px" }}>
                 <input
                   type="range"
                   min={500}
@@ -185,107 +306,287 @@ export default function ShopPage() {
                   step={500}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
-                  className="w-full accent-[#C4956A]"
+                  style={{ width: "100%", accentColor: "#C4956A" }}
                 />
-                <div className="flex justify-between text-[10px] text-[#B5AFA6] font-body mt-1">
-                  <span>KES 500</span>
-                  <span>KES 50,000</span>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
+                  <span style={{ fontSize: "10px", color: "#3A3A3C", fontFamily: "Jost, sans-serif" }}>KES 500</span>
+                  <span style={{ fontSize: "10px", color: "#3A3A3C", fontFamily: "Jost, sans-serif" }}>KES 50,000</span>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* ── Products Grid ────────────────────────────────────────── */}
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {/* ── Product Grid ─────────────────────────────────────────────── */}
+      <div className="section-padding" style={{ paddingTop: "48px", paddingBottom: "80px" }}>
+        <div className="container-narrow">
+
+          {/* Loading skeleton */}
+          {loading && (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gap: "2px",
+            }}>
               {Array(8).fill(null).map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-[#EDE8E0] aspect-[3/4] mb-4" />
-                  <div className="bg-[#EDE8E0] h-3 w-16 mb-2" />
-                  <div className="bg-[#EDE8E0] h-4 w-32 mb-2" />
-                  <div className="bg-[#EDE8E0] h-3 w-20" />
+                <div key={i} style={{ animation: "pulse 1.5s infinite" }}>
+                  <div style={{ backgroundColor: "#EDE8E0", aspectRatio: "3/4", marginBottom: "12px" }} />
+                  <div style={{ backgroundColor: "#EDE8E0", height: "10px", width: "60px", marginBottom: "8px" }} />
+                  <div style={{ backgroundColor: "#EDE8E0", height: "14px", width: "120px", marginBottom: "8px" }} />
+                  <div style={{ backgroundColor: "#EDE8E0", height: "10px", width: "80px" }} />
                 </div>
               ))}
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-32">
-              <p className="font-display text-3xl text-[#0A0A0A] mb-4">No styles found</p>
-              <p className="text-[#6E6860] font-body text-sm mb-8">
+          )}
+
+          {/* Empty state */}
+          {!loading && filtered.length === 0 && (
+            <div style={{ textAlign: "center", paddingTop: "80px", paddingBottom: "80px" }}>
+              <div style={{
+                width: "64px",
+                height: "64px",
+                border: "1px solid #EDE8E0",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 24px",
+              }}>
+                <ShoppingBag size={24} strokeWidth={1} style={{ color: "#B5AFA6" }} />
+              </div>
+              <h2 style={{
+                fontFamily: "Georgia, serif",
+                fontSize: "32px",
+                color: "#0A0A0A",
+                marginBottom: "12px",
+                fontWeight: 400,
+              }}>
+                No styles found
+              </h2>
+              <p style={{
+                color: "#6E6860",
+                fontFamily: "Jost, sans-serif",
+                fontSize: "14px",
+                marginBottom: "32px",
+                fontWeight: 300,
+              }}>
                 Try adjusting your filters or check back soon for new arrivals.
               </p>
               <button
                 onClick={() => { setActiveCategory("all"); setMaxPrice(50000); }}
-                className="btn-outline"
+                style={{
+                  border: "1px solid #0A0A0A",
+                  backgroundColor: "transparent",
+                  color: "#0A0A0A",
+                  padding: "12px 32px",
+                  fontSize: "11px",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  fontFamily: "Jost, sans-serif",
+                  cursor: "pointer",
+                  transition: "all 0.3s",
+                }}
               >
                 Clear Filters
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+          )}
+
+          {/* Products */}
+          {!loading && filtered.length > 0 && (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "40px 24px",
+            }}>
               {filtered.map((shoe) => (
-                <div key={shoe.id} className="group">
+                <div
+                  key={shoe.id}
+                  onMouseEnter={() => setHoveredId(shoe.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
                   {/* Image */}
-                  <Link href={`/product/${shoe.id}`}>
-                    <div className="relative bg-[#EDE8E0] aspect-[3/4] mb-4 overflow-hidden">
+                  <Link href={`/product/${shoe.id}`} style={{ textDecoration: "none", display: "block" }}>
+                    <div style={{
+                      position: "relative",
+                      backgroundColor: "#EDE8E0",
+                      aspectRatio: "3/4",
+                      marginBottom: "16px",
+                      overflow: "hidden",
+                    }}>
                       {shoe.images?.[0] ? (
                         <img
                           src={shoe.images[0]}
                           alt={shoe.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            transform: hoveredId === shoe.id ? "scale(1.05)" : "scale(1)",
+                            transition: "transform 0.6s ease",
+                          }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <p className="text-[#B5AFA6] text-xs tracking-widest uppercase font-body">
+                        <div style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                        }}>
+                          <div style={{ width: "24px", height: "1px", backgroundColor: "#B5AFA6" }} />
+                          <p style={{
+                            color: "#B5AFA6",
+                            fontSize: "10px",
+                            letterSpacing: "0.3em",
+                            textTransform: "uppercase",
+                            fontFamily: "Jost, sans-serif",
+                          }}>
                             Rocksware
                           </p>
+                          <div style={{ width: "24px", height: "1px", backgroundColor: "#B5AFA6" }} />
                         </div>
                       )}
 
                       {/* Featured badge */}
                       {shoe.featured && (
-                        <span className="absolute top-3 left-3 bg-[#C4956A] text-white text-[10px] tracking-widest uppercase px-2 py-1 font-body">
+                        <div style={{
+                          position: "absolute",
+                          top: "12px",
+                          left: "12px",
+                          backgroundColor: "#C4956A",
+                          color: "white",
+                          fontSize: "9px",
+                          letterSpacing: "0.2em",
+                          textTransform: "uppercase",
+                          fontFamily: "Jost, sans-serif",
+                          padding: "4px 10px",
+                        }}>
                           New In
-                        </span>
+                        </div>
+                      )}
+
+                      {/* Out of stock overlay */}
+                      {shoe.stock === 0 && (
+                        <div style={{
+                          position: "absolute",
+                          inset: 0,
+                          backgroundColor: "rgba(245,240,232,0.7)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}>
+                          <p style={{
+                            fontSize: "10px",
+                            letterSpacing: "0.2em",
+                            textTransform: "uppercase",
+                            fontFamily: "Jost, sans-serif",
+                            color: "#6E6860",
+                          }}>
+                            Sold Out
+                          </p>
+                        </div>
                       )}
 
                       {/* Quick add */}
-                      <button
-                        onClick={() => handleQuickAdd(shoe)}
-                        className="absolute bottom-0 left-0 right-0 bg-[#0A0A0A] text-[#F5F0E8] py-3 text-xs tracking-widest uppercase font-body translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-[#C4956A]"
-                      >
-                        Quick Add
-                      </button>
+                      {shoe.stock > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleQuickAdd(shoe);
+                          }}
+                          style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            backgroundColor: "#0A0A0A",
+                            color: "#F5F0E8",
+                            border: "none",
+                            padding: "14px",
+                            fontSize: "10px",
+                            letterSpacing: "0.2em",
+                            textTransform: "uppercase",
+                            fontFamily: "Jost, sans-serif",
+                            cursor: "pointer",
+                            transform: hoveredId === shoe.id ? "translateY(0)" : "translateY(100%)",
+                            transition: "transform 0.3s ease, background-color 0.2s",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#C4956A")}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0A0A0A")}
+                        >
+                          Quick Add
+                        </button>
+                      )}
                     </div>
                   </Link>
 
                   {/* Info */}
-                  <p className="text-[#B5AFA6] text-[10px] tracking-widest uppercase font-body mb-1">
-                    {shoe.brand}
-                  </p>
-                  <Link href={`/product/${shoe.id}`}>
-                    <h3 className="font-display text-[#0A0A0A] text-lg hover:text-[#C4956A] transition-colors mb-1">
-                      {shoe.name}
-                    </h3>
-                  </Link>
-                  <p className="text-[#2C2825] font-body text-sm font-medium">
-                    KES {shoe.price.toLocaleString()}
-                  </p>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        color: "#B5AFA6",
+                        fontSize: "9px",
+                        letterSpacing: "0.2em",
+                        textTransform: "uppercase",
+                        fontFamily: "Jost, sans-serif",
+                        marginBottom: "4px",
+                      }}>
+                        {shoe.brand}
+                      </p>
+                      <Link href={`/product/${shoe.id}`} style={{ textDecoration: "none" }}>
+                        <h3 style={{
+                          fontFamily: "Georgia, serif",
+                          fontSize: "18px",
+                          color: "#0A0A0A",
+                          fontWeight: 400,
+                          marginBottom: "4px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {shoe.name}
+                        </h3>
+                      </Link>
 
-                  {/* Sizes preview */}
-                  {shoe.sizes?.length > 0 && (
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      {shoe.sizes.slice(0, 4).map((size) => (
-                        <span key={size} className="text-[10px] text-[#B5AFA6] font-body border border-[#EDE8E0] px-1.5 py-0.5">
-                          {size}
-                        </span>
-                      ))}
-                      {shoe.sizes.length > 4 && (
-                        <span className="text-[10px] text-[#B5AFA6] font-body">
-                          +{shoe.sizes.length - 4}
-                        </span>
+                      {/* Sizes preview */}
+                      {shoe.sizes?.length > 0 && (
+                        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "6px" }}>
+                          {shoe.sizes.slice(0, 4).map((size) => (
+                            <span key={size} style={{
+                              fontSize: "9px",
+                              color: "#B5AFA6",
+                              fontFamily: "Jost, sans-serif",
+                              border: "1px solid #EDE8E0",
+                              padding: "2px 6px",
+                            }}>
+                              {size}
+                            </span>
+                          ))}
+                          {shoe.sizes.length > 4 && (
+                            <span style={{ fontSize: "9px", color: "#B5AFA6", fontFamily: "Jost, sans-serif" }}>
+                              +{shoe.sizes.length - 4}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
+
+                    {/* Price */}
+                    <p style={{
+                      fontFamily: "Jost, sans-serif",
+                      fontSize: "14px",
+                      color: "#0A0A0A",
+                      fontWeight: 500,
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                    }}>
+                      KES {shoe.price.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
